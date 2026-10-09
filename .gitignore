@@ -1,0 +1,15 @@
+# Environment files - NEVER PUSH
+.env
+.env.*
+
+# Private configuration
+/config/database.php
+/config/mail.php
+
+# Local data and dependencies
+/backups/
+/uploads/
+/vendor/
+
+# Separate frontend repository
+/frontend/

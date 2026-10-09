@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Reaction API</title>
+</head>
+
+<body>
+
+<h1>Test Reaction API</h1>
+
+<button id="reactButton">
+    Toggle Reaction Post ID 1
+</button>
+
+<pre id="result"></pre>
+
+<script>
+
+const button = document.getElementById('reactButton');
+const result = document.getElementById('result');
+
+button.addEventListener('click', async () => {
+
+    try {
+
+        const response = await fetch(
+            'http://localhost/node/api/reactions/toggle.php',
+            {
+                method: 'POST',
+
+                credentials: 'include',
+
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+
+                body: JSON.stringify({
+                    post_id: 1
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        result.textContent =
+            JSON.stringify(data, null, 2);
+
+    } catch (error) {
+
+        result.textContent =
+            error.message;
+    }
+
+});
+
+</script>
+
+</body>
+</html>
