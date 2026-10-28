@@ -23,15 +23,15 @@ $stmt = $pdo->prepare(
         reports.reviewed_at,
         reports.created_at,
 
-        reporter.username AS reporter_username,
+        reporter.full_name AS reporter_username,
 
         posts.content AS post_content,
         posts.user_id AS post_owner_id,
-        post_owner.username AS post_owner_username,
+        post_owner.full_name AS post_owner_username,
 
         comments.content AS comment_content,
         comments.user_id AS comment_owner_id,
-        comment_owner.username AS comment_owner_username
+        comment_owner.full_name AS comment_owner_username
 
      FROM reports
 
@@ -64,6 +64,25 @@ $report = $stmt->fetch();
 if (!$report) {
     die('Report tidak ditemukan.');
 }
+
+
+$reportedMedia = [];
+
+if ($report['post_id'] !== null) {
+    $mediaStmt = $pdo->prepare(
+        "SELECT file_name, file_path, file_type
+         FROM post_media
+         WHERE post_id = :post_id
+         ORDER BY id ASC"
+    );
+
+    $mediaStmt->execute([
+        ':post_id' => $report['post_id']
+    ]);
+
+    $reportedMedia = $mediaStmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 
 $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 
@@ -496,8 +515,83 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
                             </div>
 
                         </div>
+                                        
+                    <div class="reported-content">
 
+                        <div class="reported-content-label">
+                            Media Postingan
+                        </div>
 
+                        <?php if (empty($reportedMedia)): ?>
+
+                            <p>Postingan ini tidak memiliki media.</p>
+
+                        <?php else: ?>
+
+                            <div class="reported-media-list">
+
+                                <?php foreach ($reportedMedia as $media): ?>
+
+                                    <?php
+                                    $filePath = $media['file_path'];
+
+                                    // Path media berasal dari database.
+                                    // Batasi akses ke folder uploads/posts.
+                                    $normalizedPath = str_replace('\\', '/', $filePath);
+                                    $isAllowedPath = preg_match(
+                                        '#^uploads/posts/[^/]+$#',
+                                        $normalizedPath
+                                    );
+
+                                    $mediaUrl = '../' . $normalizedPath;
+
+                                    $isImage = strpos(
+                                        (string) $media['file_type'],
+                                        'image/'
+                                    ) === 0;
+
+                                    $isVideo = strpos(
+                                        (string) $media['file_type'],
+                                        'video/'
+                                    ) === 0;
+                                    ?>
+
+                                    <?php if ($isAllowedPath && $isImage): ?>
+
+                                        <img
+                                            src="<?= htmlspecialchars($mediaUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                            alt="Media postingan yang dilaporkan"
+                                            loading="lazy"
+                                            style="display:block;max-width:100%;height:auto;border-radius:10px;margin-top:12px;"
+                                        >
+
+                                    <?php elseif ($isAllowedPath && $isVideo): ?>
+
+                                        <video
+                                            controls
+                                            preload="metadata"
+                                            style="display:block;width:100%;max-width:640px;border-radius:10px;margin-top:12px;"
+                                        >
+                                            <source
+                                                src="<?= htmlspecialchars($mediaUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                                type="<?= htmlspecialchars($media['file_type'], ENT_QUOTES, 'UTF-8') ?>"
+                                            >
+                                            Browser tidak mendukung pemutaran video.
+                                        </video>
+
+                                    <?php else: ?>
+
+                                        <p>Media tidak dapat ditampilkan.</p>
+
+                                    <?php endif; ?>
+
+                                <?php endforeach; ?>
+
+                            </div>
+
+                        <?php endif; ?>
+
+                    </div>
                     <?php elseif ($report['comment_id'] !== null): ?>
 
 

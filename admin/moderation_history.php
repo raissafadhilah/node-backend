@@ -3,8 +3,6 @@
 require_once '../config/database.php';
 require_once '../includes/admin_auth.php';
 
-// Ambil semua moderation actions dari database
-
 $stmt = $pdo->prepare(
     "SELECT
         moderation_actions.id,
@@ -17,7 +15,7 @@ $stmt = $pdo->prepare(
         moderation_actions.notes,
         moderation_actions.created_at,
         admins.username AS admin_username,
-        users.username AS affected_username
+        users.full_name AS affected_username
      FROM moderation_actions
      INNER JOIN admins
         ON admins.id = moderation_actions.admin_id
@@ -25,6 +23,7 @@ $stmt = $pdo->prepare(
         ON users.id = moderation_actions.user_id
      ORDER BY moderation_actions.created_at DESC"
 );
+
 
 $stmt->execute();
 

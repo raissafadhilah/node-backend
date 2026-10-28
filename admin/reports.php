@@ -14,7 +14,7 @@ $stmt = $pdo->prepare(
         reports.reason,
         reports.status,
         reports.created_at,
-        users.username AS reporter_username,
+        users.full_name AS reporter_username,
         posts.content AS post_content,
         comments.content AS comment_content
      FROM reports
@@ -26,7 +26,6 @@ $stmt = $pdo->prepare(
         ON comments.id = reports.comment_id
      ORDER BY reports.created_at DESC"
 );
-
 $stmt->execute();
 
 $reports = $stmt->fetchAll();

@@ -1,11 +1,12 @@
+
 <?php
 
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../config/response.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/session.php';
-if (!isset($_SESSION['user_id'])) {
 
+if (!isset($_SESSION['user_id'])) {
     jsonResponse(
         false,
         'User belum login.',
@@ -14,9 +15,9 @@ if (!isset($_SESSION['user_id'])) {
     );
 }
 
-$userId = $_SESSION['user_id'];
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+$userId = (int) $_SESSION['user_id'];
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(
         false,
         'Method tidak diperbolehkan.',
@@ -31,8 +32,12 @@ $input = json_decode(
 );
 
 $postId = $input['post_id'] ?? '';
-if (!filter_var($postId, FILTER_VALIDATE_INT)) {
 
+if (
+    !is_scalar($postId) ||
+    !filter_var($postId, FILTER_VALIDATE_INT) ||
+    (int) $postId < 1
+) {
     jsonResponse(
         false,
         'ID postingan tidak valid.',
@@ -40,12 +45,16 @@ if (!filter_var($postId, FILTER_VALIDATE_INT)) {
         400
     );
 }
+
+$postId = (int) $postId;
+
 $stmt = $pdo->prepare(
     "SELECT
-        id
+        id,
+        user_id
      FROM posts
      WHERE id = :post_id
-     AND status = 'active'
+       AND status = 'active'
      LIMIT 1"
 );
 
@@ -53,10 +62,9 @@ $stmt->execute([
     ':post_id' => $postId
 ]);
 
-$post = $stmt->fetch();
+$post = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$post) {
-
     jsonResponse(
         false,
         'Postingan tidak ditemukan atau sudah dihapus.',
@@ -65,12 +73,12 @@ if (!$post) {
     );
 }
 
+$postOwnerId = (int) $post['user_id'];
 $stmt = $pdo->prepare(
-    "SELECT
-        id
+    "SELECT id
      FROM reactions
      WHERE user_id = :user_id
-     AND post_id = :post_id
+       AND post_id = :post_id
      LIMIT 1"
 );
 
@@ -79,23 +87,23 @@ $stmt->execute([
     ':post_id' => $postId
 ]);
 
-$reaction = $stmt->fetch();
-if ($reaction) {
+$reaction = $stmt->fetch(PDO::FETCH_ASSOC);
 
+if ($reaction) {
     $stmt = $pdo->prepare(
         "DELETE FROM reactions
-         WHERE id = :reaction_id"
+         WHERE id = :reaction_id
+           AND user_id = :user_id"
     );
 
     $stmt->execute([
-        ':reaction_id' => $reaction['id']
+        ':reaction_id' => (int) $reaction['id'],
+        ':user_id' => $userId
     ]);
 
     $isReacted = false;
     $message = 'Reaction dihapus.';
-
 } else {
-
     $stmt = $pdo->prepare(
         "INSERT INTO reactions (
             post_id,
@@ -113,7 +121,30 @@ if ($reaction) {
 
     $isReacted = true;
     $message = 'Reaction berhasil ditambahkan.';
+
+    if ($postOwnerId !== $userId) {
+        $stmtNotification = $pdo->prepare(
+            "INSERT INTO notifications (
+                recipient_id,
+                actor_id,
+                post_id,
+                type
+            ) VALUES (
+                :recipient_id,
+                :actor_id,
+                :post_id,
+                'reaction'
+            )"
+        );
+
+        $stmtNotification->execute([
+            ':recipient_id' => $postOwnerId,
+            ':actor_id' => $userId,
+            ':post_id' => $postId
+        ]);
+    }
 }
+
 $stmt = $pdo->prepare(
     "SELECT COUNT(*) AS total
      FROM reactions
@@ -124,13 +155,13 @@ $stmt->execute([
     ':post_id' => $postId
 ]);
 
-$reactionCount = $stmt->fetch();
+$reactionCount = $stmt->fetch(PDO::FETCH_ASSOC);
 
 jsonResponse(
     true,
     $message,
     [
-        'post_id' => (int) $postId,
+        'post_id' => $postId,
         'is_reacted' => $isReacted,
         'reaction_count' => (int) $reactionCount['total']
     ]

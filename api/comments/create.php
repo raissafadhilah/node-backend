@@ -1,3 +1,4 @@
+
 <?php
 
 require_once __DIR__ . '/../config/cors.php';
@@ -5,11 +6,7 @@ require_once __DIR__ . '/../config/response.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/session.php';
 
-
-
-
 if (!isset($_SESSION['user_id'])) {
-
     jsonResponse(
         false,
         'User belum login.',
@@ -18,13 +15,9 @@ if (!isset($_SESSION['user_id'])) {
     );
 }
 
-$userId = $_SESSION['user_id'];
-
-
-
+$userId = (int) $_SESSION['user_id'];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-
     jsonResponse(
         false,
         'Method tidak diperbolehkan.',
@@ -33,18 +26,28 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     );
 }
 
-
-
 $input = json_decode(
     file_get_contents('php://input'),
     true
 );
 
+if (!is_array($input)) {
+    jsonResponse(
+        false,
+        'Data request tidak valid.',
+        null,
+        400
+    );
+}
+
 $postId = $input['post_id'] ?? '';
 $content = trim($input['content'] ?? '');
 
-if (!filter_var($postId, FILTER_VALIDATE_INT)) {
-
+if (
+    !is_scalar($postId) ||
+    !filter_var($postId, FILTER_VALIDATE_INT) ||
+    (int) $postId < 1
+) {
     jsonResponse(
         false,
         'ID postingan tidak valid.',
@@ -52,8 +55,10 @@ if (!filter_var($postId, FILTER_VALIDATE_INT)) {
         400
     );
 }
-if ($content === '') {
 
+$postId = (int) $postId;
+
+if (!is_string($content) || $content === '') {
     jsonResponse(
         false,
         'Komentar wajib diisi.',
@@ -63,10 +68,11 @@ if ($content === '') {
 }
 $stmt = $pdo->prepare(
     "SELECT
-        id
+        id,
+        user_id
      FROM posts
      WHERE id = :post_id
-     AND status = 'active'
+       AND status = 'active'
      LIMIT 1"
 );
 
@@ -74,10 +80,9 @@ $stmt->execute([
     ':post_id' => $postId
 ]);
 
-$post = $stmt->fetch();
+$post = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$post) {
-
     jsonResponse(
         false,
         'Postingan tidak ditemukan atau sudah dihapus.',
@@ -85,6 +90,8 @@ if (!$post) {
         404
     );
 }
+
+$postOwnerId = (int) $post['user_id'];
 $stmt = $pdo->prepare(
     "INSERT INTO comments (
         post_id,
@@ -95,27 +102,49 @@ $stmt = $pdo->prepare(
         :post_id,
         :user_id,
         :content,
-        :status
+        'active'
     )"
 );
 
 $stmt->execute([
     ':post_id' => $postId,
     ':user_id' => $userId,
-    ':content' => $content,
-    ':status' => 'active'
+    ':content' => $content
 ]);
 
-$commentId = $pdo->lastInsertId();
+$commentId = (int) $pdo->lastInsertId();
+if ($postOwnerId !== $userId) {
+    $stmtNotification = $pdo->prepare(
+        "INSERT INTO notifications (
+            recipient_id,
+            actor_id,
+            post_id,
+            comment_id,
+            type
+        ) VALUES (
+            :recipient_id,
+            :actor_id,
+            :post_id,
+            :comment_id,
+            'comment'
+        )"
+    );
 
+    $stmtNotification->execute([
+        ':recipient_id' => $postOwnerId,
+        ':actor_id' => $userId,
+        ':post_id' => $postId,
+        ':comment_id' => $commentId
+    ]);
+}
 
 jsonResponse(
     true,
     'Komentar berhasil dibuat.',
     [
-        'id' => (int) $commentId,
-        'post_id' => (int) $postId,
-        'user_id' => (int) $userId,
+        'id' => $commentId,
+        'post_id' => $postId,
+        'user_id' => $userId,
         'content' => $content,
         'status' => 'active'
     ],

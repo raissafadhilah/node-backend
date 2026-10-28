@@ -1,14 +1,14 @@
+
 <?php
 
 require_once '../config/database.php';
 require_once '../includes/admin_auth.php';
 
 // Ambil data user dari database
-
 $stmt = $pdo->prepare(
     "SELECT
         id,
-        username,
+        full_name,
         email,
         is_verified,
         created_at
@@ -25,10 +25,9 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -42,30 +41,21 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
         rel="stylesheet"
         href="../assets/css/admin.css"
     >
-
 </head>
 
 <body>
 
 <div class="admin-layout">
 
-
-    <!-- =========================
-         SIDEBAR
-         ========================= -->
-
+    <!-- SIDEBAR -->
     <aside class="admin-sidebar">
 
         <div>
 
             <div class="admin-brand">
-
                 <h1>node</h1>
-
                 <p>Admin Panel</p>
-
             </div>
-
 
             <nav class="admin-nav">
 
@@ -96,67 +86,57 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 
         </div>
 
-
-        <!-- Sidebar Bottom -->
-
+        <!-- SIDEBAR BOTTOM -->
         <div class="admin-sidebar-bottom">
 
             <form
                 action="logout.php"
                 method="POST"
             >
-
                 <button
                     type="submit"
                     class="admin-logout"
                 >
                     Logout Admin
                 </button>
-
             </form>
 
         </div>
 
     </aside>
 
-
-
-    <!-- =========================
-         MAIN CONTENT
-         ========================= -->
-
+    <!-- MAIN CONTENT -->
     <main class="admin-main">
 
-
         <!-- TOPBAR -->
-
         <header class="admin-topbar">
 
             <div class="admin-heading">
-
                 <h2>User Management</h2>
 
                 <p>
                     Data pengguna yang terdaftar di Node.
                 </p>
-
             </div>
-
 
             <div class="admin-user">
 
                 <div class="admin-avatar">
-
-                    <?= strtoupper(
-                        substr($adminUsername, 0, 1)
+                    <?= htmlspecialchars(
+                        strtoupper(substr($adminUsername, 0, 1)),
+                        ENT_QUOTES,
+                        'UTF-8'
                     ) ?>
-
                 </div>
 
                 <div class="admin-user-info">
 
                     <strong>
-                        <?= htmlspecialchars($adminUsername) ?>
+                        <?= htmlspecialchars(
+                            $adminUsername,
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
                     </strong>
 
                     <span>
@@ -169,20 +149,12 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 
         </header>
 
-
-
         <!-- USER DATA -->
-
         <section class="admin-section">
 
             <div class="admin-section-title">
-
-                <h3>
-                    Daftar User
-                </h3>
-
+                <h3>Daftar User</h3>
             </div>
-
 
             <?php if (empty($users)): ?>
 
@@ -201,39 +173,19 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 
             <?php else: ?>
 
-
                 <div class="admin-table-wrapper">
 
                     <table class="admin-table">
 
                         <thead>
-
                             <tr>
-
-                                <th>
-                                    User ID
-                                </th>
-
-                                <th>
-                                    Username
-                                </th>
-
-                                <th>
-                                    Email
-                                </th>
-
-                                <th>
-                                    Status
-                                </th>
-
-                                <th>
-                                    Tanggal Daftar
-                                </th>
-
+                                <th>User ID</th>
+                                <th>Nama Lengkap</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Tanggal Daftar</th>
                             </tr>
-
                         </thead>
-
 
                         <tbody>
 
@@ -242,43 +194,34 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
                                 <tr>
 
                                     <td>
-
                                         <span class="user-id">
-
                                             #<?= htmlspecialchars(
-                                                $user['id']
+                                                (string) $user['id'],
+                                                ENT_QUOTES,
+                                                'UTF-8'
                                             ) ?>
-
                                         </span>
-
                                     </td>
 
-
                                     <td>
-
                                         <span class="user-name">
-
                                             <?= htmlspecialchars(
-                                                $user['username']
+                                                $user['full_name'] ?? '',
+                                                ENT_QUOTES,
+                                                'UTF-8'
                                             ) ?>
-
                                         </span>
-
                                     </td>
-
 
                                     <td>
-
                                         <span class="user-email">
-
                                             <?= htmlspecialchars(
-                                                $user['email']
+                                                $user['email'] ?? '',
+                                                ENT_QUOTES,
+                                                'UTF-8'
                                             ) ?>
-
                                         </span>
-
                                     </td>
-
 
                                     <td>
 
@@ -298,13 +241,12 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 
                                     </td>
 
-
                                     <td>
-
                                         <?= htmlspecialchars(
-                                            $user['created_at']
+                                            $user['created_at'] ?? '',
+                                            ENT_QUOTES,
+                                            'UTF-8'
                                         ) ?>
-
                                     </td>
 
                                 </tr>
@@ -317,9 +259,7 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 
                 </div>
 
-
             <?php endif; ?>
-
 
             <a
                 href="dashboard.php"
@@ -330,11 +270,9 @@ $adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 
         </section>
 
-
     </main>
 
 </div>
 
 </body>
-
 </html>

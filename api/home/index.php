@@ -9,10 +9,6 @@ $isLoggedIn = isset($_SESSION['user_id']);
 $userId = $_SESSION['user_id'] ?? null;
 
 
-/*|--------------------------------------------------------------------------
-| 1. TRENDING DISCUSSIONS
-|--------------------------------------------------------------------------
-*/
 
 $stmt = $pdo->prepare(
     "SELECT
@@ -23,6 +19,7 @@ $stmt = $pdo->prepare(
         posts.created_at,
         users.full_name,
         users.status,
+        users.profile_photo,
 
         (
             SELECT GROUP_CONCAT(
@@ -97,11 +94,6 @@ foreach ($trendingPosts as &$post) {
 
 unset($post);
 
-/*
-|--------------------------------------------------------------------------
-| 2. TRENDING TOPICS
-|--------------------------------------------------------------------------
-*/
 
 $stmt = $pdo->prepare(
     "SELECT
@@ -138,12 +130,6 @@ $stmt->execute();
 $dynamicTopics = $stmt->fetchAll();
 
 
-/*
-|--------------------------------------------------------------------------
-| 3. MAIN FEED
-|--------------------------------------------------------------------------
-*/
-
 $stmt = $pdo->prepare(
     "SELECT
         posts.id,
@@ -154,6 +140,7 @@ $stmt = $pdo->prepare(
 
         users.full_name,
         users.status,
+        users.profile_photo,
 
         bookmarks.id AS bookmark_id,
 

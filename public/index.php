@@ -146,7 +146,7 @@ $trendingTopics = $stmt->fetchAll();
 
 ?>
 
-?>
+
 
 <!DOCTYPE html>
 <html lang="en">
