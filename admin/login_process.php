@@ -1,55 +1,56 @@
+
 <?php
 
 require_once '../config/database.php';
 require_once '../includes/session.php';
 
+// Pastikan request berasal dari POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: login.php');
     exit;
 }
 
-$username = trim($_POST['username'] ?? '');
+// Ambil email dan password
+$email = trim($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
+echo "FILE LOGIN PROCESS BERHASIL DIJALANKAN";
 
-if ($username === '' || $password === '') {
-    die('Username dan password wajib diisi.');
+if ($email === '' || $password === '') {
+    die('Email dan password wajib diisi.');
 }
 
-
-// neangan admin make username na
-
+// Cari admin berdasarkan email
 $stmt = $pdo->prepare(
     "SELECT
         id,
+        email,
         username,
         password
      FROM admins
-     WHERE username = :username
+     WHERE email = :email
      LIMIT 1"
 );
 
 $stmt->execute([
-    ':username' => $username
+    ':email' => $email
 ]);
 
 $admin = $stmt->fetch();
 
-
-// nga validasi password na make password_verify
-
 if (!$admin) {
-    die('Username atau password salah.');
+    die('DEBUG: EMAIL ADMIN TIDAK DITEMUKAN.');
 }
 
 if (!password_verify($password, $admin['password'])) {
-    die('Username atau password salah.');
+    die('DEBUG: EMAIL DITEMUKAN, TETAPI PASSWORD TIDAK COCOK.');
 }
 
 
-// login berhasil, simpen data admin kana session
 session_regenerate_id(true);
-
 $_SESSION['admin_id'] = $admin['id'];
+$_SESSION['admin_email'] = $admin['email'];
 $_SESSION['admin_username'] = $admin['username'];
 
-echo "Login admin berhasil!";
+
+header('Location: dashboard.php');
+exit;

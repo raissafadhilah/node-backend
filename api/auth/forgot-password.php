@@ -211,6 +211,11 @@ try {
         $pdo->rollBack();
     }
 
+    error_log(
+        '[NODE FORGOT PASSWORD ERROR] ' .
+        $e->getMessage()
+    );
+
     jsonResponse(
         false,
         'OTP gagal dikirim. Silakan coba lagi.',

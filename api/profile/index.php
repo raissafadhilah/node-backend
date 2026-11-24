@@ -1,4 +1,3 @@
-
 <?php
 
 require_once __DIR__ . '/../config/cors.php';
@@ -36,11 +35,17 @@ if (!$profileUserId || $profileUserId < 1) {
     $profileUserId = $currentUserId;
 }
 
+$isOwnProfile = ((int) $profileUserId === $currentUserId);
+
+// Ambil informasi profil.
+// Email hanya akan dikirim kepada pemilik akun.
 $stmt = $pdo->prepare(
     "SELECT
         id,
         full_name,
         status,
+        faculty,
+        email,
         profile_photo
      FROM users
      WHERE id = :user_id
@@ -62,6 +67,7 @@ if (!$user) {
     );
 }
 
+// Ambil seluruh post milik pengguna.
 $stmtPosts = $pdo->prepare(
     "SELECT
         posts.id,
@@ -71,6 +77,7 @@ $stmtPosts = $pdo->prepare(
         posts.created_at,
         users.full_name,
         users.status,
+        users.profile_photo,
 
         (
             SELECT GROUP_CONCAT(
@@ -165,6 +172,7 @@ foreach ($posts as &$post) {
 
 unset($post);
 
+// Ambil replies milik pengguna.
 $stmtReplies = $pdo->prepare(
     "SELECT
         comments.id,
@@ -193,18 +201,25 @@ foreach ($replies as &$reply) {
 
 unset($reply);
 
-$isOwnProfile = ((int) $profileUserId === $currentUserId);
+// Susun data profil.
+$userData = [
+    'id' => (int) $user['id'],
+    'full_name' => $user['full_name'],
+    'status' => $user['status'],
+    'faculty' => $user['faculty'],
+    'profile_photo' => $user['profile_photo']
+];
+
+// Email hanya tersedia untuk profil sendiri.
+if ($isOwnProfile) {
+    $userData['email'] = $user['email'];
+}
 
 jsonResponse(
     true,
     'Profile berhasil diambil.',
     [
-        'user' => [
-            'id' => (int) $user['id'],
-            'full_name' => $user['full_name'],
-            'status' => $user['status'],
-            'profile_photo' => $user['profile_photo']
-        ],
+        'user' => $userData,
         'is_own_profile' => $isOwnProfile,
         'posts' => $posts,
         'replies' => $replies

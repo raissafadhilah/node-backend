@@ -1,8 +1,8 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -22,16 +22,17 @@
 
     <form action="login_process.php" method="POST">
 
-        <label for="username">
-            Username
+        <label for="email">
+            Email Administrator
         </label>
 
         <br>
 
         <input
-            type="text"
-            id="username"
-            name="username"
+            type="email"
+            id="email"
+            name="email"
+            placeholder="admin@node.com"
             required
         >
 
@@ -47,6 +48,7 @@
             type="password"
             id="password"
             name="password"
+            placeholder="Masukkan password"
             required
         >
 

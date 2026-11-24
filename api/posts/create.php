@@ -27,6 +27,7 @@ $userId = $_SESSION['user_id'];
 
 $caption = trim($_POST['caption'] ?? '');
 $content = trim($_POST['content'] ?? '');
+$category = trim($_POST['category'] ?? '');
 $hashtagsInput = trim($_POST['hashtags'] ?? '');
 
 if ($caption === '') {
@@ -38,10 +39,20 @@ if ($caption === '') {
     );
 }
 
-if ($content === '') {
+$allowedCategories = [
+    'FICT',
+    'FMB',
+    'FHS',
+    'Academic',
+    'Career',
+    'Campus Life',
+    'Other'
+];
+
+if (!in_array($category, $allowedCategories, true)) {
     jsonResponse(
         false,
-        'Kalimat tambahan wajib diisi.',
+        'Kategori tidak valid.',
         null,
         400
     );
@@ -53,22 +64,25 @@ try {
     $pdo->beginTransaction();
     $stmt = $pdo->prepare(
         "INSERT INTO posts (
-            user_id,
-            caption,
-            content,
-            status
-        ) VALUES (
-            :user_id,
-            :caption,
-            :content,
-            :status
-        )"
+        user_id,
+        caption,
+        content,
+        category,
+        status
+    ) VALUES (
+        :user_id,
+        :caption,
+        :content,
+        :category,
+        :status
+    )"
     );
 
     $stmt->execute([
         ':user_id' => $userId,
         ':caption' => $caption,
         ':content' => $content,
+        ':category' => $category,
         ':status' => 'active'
     ]);
 
@@ -195,11 +209,13 @@ try {
             $file['tmp_name']
         );
 
-        if (!in_array(
-            $fileType,
-            $allowedTypes,
-            true
-        )) {
+        if (
+            !in_array(
+                $fileType,
+                $allowedTypes,
+                true
+            )
+        ) {
             throw new Exception(
                 'Format media tidak didukung. ' .
                 'Gunakan JPG, PNG, WEBP, MP4, WEBM, atau OGG.'
@@ -228,10 +244,12 @@ try {
 
         $filePath = $uploadDir . $fileName;
 
-        if (!move_uploaded_file(
-            $file['tmp_name'],
-            $filePath
-        )) {
+        if (
+            !move_uploaded_file(
+                $file['tmp_name'],
+                $filePath
+            )
+        ) {
             throw new Exception(
                 'Media gagal disimpan.'
             );
@@ -281,6 +299,7 @@ try {
                 'user_id' => (int) $userId,
                 'caption' => $caption,
                 'content' => $content,
+                'category' => $category,
                 'status' => 'active',
                 'hashtags' => $savedHashtags,
                 'media' => $mediaData

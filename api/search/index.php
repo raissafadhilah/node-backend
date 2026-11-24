@@ -62,6 +62,7 @@ $stmtPosts = $pdo->prepare(
         posts.created_at,
         users.full_name,
         users.status,
+        users.profile_photo,
 
         (
             SELECT GROUP_CONCAT(

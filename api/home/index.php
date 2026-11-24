@@ -7,6 +7,13 @@ require_once __DIR__ . '/../../includes/session.php';
 
 $isLoggedIn = isset($_SESSION['user_id']);
 $userId = $_SESSION['user_id'] ?? null;
+$trendingLimit = filter_var(
+    $_GET['trending_limit'] ?? 3,
+    FILTER_VALIDATE_INT
+);
+$trendingLimit = $trendingLimit === false
+    ? 3
+    : max(3, min(24, $trendingLimit));
 
 
 
@@ -73,9 +80,10 @@ $stmt = $pdo->prepare(
         trending_score DESC,
         posts.created_at DESC
 
-    LIMIT 3"
+    LIMIT :trending_limit"
 );
 
+$stmt->bindValue(':trending_limit', $trendingLimit, PDO::PARAM_INT);
 $stmt->execute();
 
 $trendingPosts = $stmt->fetchAll();
